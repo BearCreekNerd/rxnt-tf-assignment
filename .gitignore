@@ -1,6 +1,7 @@
 **/bin/
 **/obj/
 **/.idea/
+**/.terraform/
 terraform/backend.conf
 terraform/terraform.tfvars
 *.tfvars
