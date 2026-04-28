@@ -161,6 +161,7 @@ resource "azurerm_mssql_server" "main" {
   administrator_login_password  = var.sql_admin_password
   minimum_tls_version           = "1.2"
   public_network_access_enabled = false
+  connection_policy             = "Default"
   tags                          = local.tags
 }
 
