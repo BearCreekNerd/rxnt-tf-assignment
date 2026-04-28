@@ -243,7 +243,7 @@ These resources should already exist before GH Workflow is run:
 
 ### Why This Works for Traffic Profile
 
-- App Service autoscale is configured on CPU thresholds to absorb spikes.
+- App Service autoscale is configured on CPU thresholds to absorb spikes. Rules have been applied for on and off hours to match with the time frame requirements.
 - Redis offloads repeated date reads during burst traffic.
 - Application Insights and Log Analytics provide baseline observability.
 
