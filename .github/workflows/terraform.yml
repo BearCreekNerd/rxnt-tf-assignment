@@ -85,7 +85,13 @@ jobs:
         env:
           TF_VAR_sql_admin_username: ${{ secrets.TF_VAR_SQL_ADMIN_USERNAME }}
           TF_VAR_sql_admin_password: ${{ secrets.TF_VAR_SQL_ADMIN_PASSWORD }}
-        run: terraform apply -input=false -auto-approve
+        run: |
+          for attempt in 1 2 3; do
+            terraform apply -input=false -auto-approve && exit 0
+            echo "Attempt ${attempt} failed. Retrying in 60s..."
+            sleep 60
+          done
+          exit 1
 
       - name: No terraform directory found
         if: steps.tf_dir.outputs.exists != 'true'
