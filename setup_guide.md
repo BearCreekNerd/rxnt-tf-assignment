@@ -127,7 +127,7 @@ See `variables.tf` for all optional overrides and their defaults.
 
 ## 6. Set the Subscription ID Environment Variable
 
-Terraform requires the Azure subscription ID to be provided via the `TF_VAR_arm_subscription_id` environment variable. This is used by the AzureRM provider during `plan` and `apply`.
+Terraform requires the Azure subscription ID to be provided via the `TF_VAR_arm_subscription_id` environment variable.This explicit declaration is a requirement of azurerm provider (version = "~> 4.7.0) This is used by the AzureRM provider during `plan` and `apply`.
 
 Get your subscription ID and set the environment variable:
 
