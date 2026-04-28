@@ -2,6 +2,7 @@
 **/obj/
 **/.idea/
 **/.terraform/
+**/.terraform.lock.hcl
 terraform/backend.conf
 terraform/terraform.tfvars
 *.tfvars
