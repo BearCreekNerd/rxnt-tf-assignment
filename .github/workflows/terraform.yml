@@ -1,0 +1,93 @@
+name: Terraform
+
+"on":
+  push:
+    branches:
+      - main
+    paths:
+      - terraform/**
+      - .github/workflows/terraform.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  actions: write
+
+jobs:
+  terraform:
+    name: Terraform CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure terraform directory exists
+        id: tf_dir
+        shell: bash
+        run: |
+          if [[ -d terraform ]]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Terraform
+        if: steps.tf_dir.outputs.exists == 'true'
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Azure login with OIDC
+        if: steps.tf_dir.outputs.exists == 'true'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Terraform fmt
+        if: steps.tf_dir.outputs.exists == 'true'
+        working-directory: terraform
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        if: steps.tf_dir.outputs.exists == 'true'
+        working-directory: terraform
+        run: |
+          terraform init -input=false \
+            -backend-config="use_oidc=true" \
+            -backend-config="resource_group_name=${{ secrets.TFSTATE_RESOURCE_GROUP }}" \
+            -backend-config="tenant_id=${{ secrets.AZURE_TENANT_ID }}" \
+            -backend-config="client_id=${{ secrets.AZURE_CLIENT_ID }}" \
+            -backend-config="storage_account_name=${{ secrets.TFSTATE_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=${{ secrets.TFSTATE_CONTAINER }}" \
+            -backend-config="key=${{ secrets.TFSTATE_KEY }}" \
+            -backend-config="use_azuread_auth=true"
+
+      - name: Terraform validate
+        if: steps.tf_dir.outputs.exists == 'true'
+        working-directory: terraform
+        run: terraform validate
+
+      - name: Terraform plan
+        if: steps.tf_dir.outputs.exists == 'true' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+        working-directory: terraform
+        env:
+          TF_VAR_sql_admin_username: ${{ secrets.TF_VAR_SQL_ADMIN_USERNAME }}
+          TF_VAR_sql_admin_password: ${{ secrets.TF_VAR_SQL_ADMIN_PASSWORD }}
+        run: terraform plan -input=false -no-color
+
+      - name: Terraform apply
+        if: steps.tf_dir.outputs.exists == 'true' && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch')
+        id: tf_apply
+        working-directory: terraform
+        env:
+          TF_VAR_sql_admin_username: ${{ secrets.TF_VAR_SQL_ADMIN_USERNAME }}
+          TF_VAR_sql_admin_password: ${{ secrets.TF_VAR_SQL_ADMIN_PASSWORD }}
+        run: terraform apply -input=false -auto-approve
+
+      - name: No terraform directory found
+        if: steps.tf_dir.outputs.exists != 'true'
+        run: |
+          echo "No terraform directory found. Skipping terraform workflow."
