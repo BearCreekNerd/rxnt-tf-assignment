@@ -1,3 +1,8 @@
+variable "arm_subscription_id" {
+  description = "Azure subscription ID."
+  type        = string
+}
+
 variable "project_name" {
   description = "Prefix used for Azure resource names."
   type        = string

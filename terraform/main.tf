@@ -509,3 +509,6 @@ resource "azurerm_monitor_autoscale_setting" "plan" {
 
   tags = local.tags
 }
+
+env:
+  TF_VAR_arm_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}

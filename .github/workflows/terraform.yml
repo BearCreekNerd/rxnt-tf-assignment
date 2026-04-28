@@ -68,12 +68,15 @@ jobs:
       - name: Terraform validate
         if: steps.tf_dir.outputs.exists == 'true'
         working-directory: terraform
+        env:
+          TF_VAR_arm_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: terraform validate
 
       - name: Terraform plan
         if: steps.tf_dir.outputs.exists == 'true' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
         working-directory: terraform
         env:
+          TF_VAR_arm_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           TF_VAR_sql_admin_username: ${{ secrets.TF_VAR_SQL_ADMIN_USERNAME }}
           TF_VAR_sql_admin_password: ${{ secrets.TF_VAR_SQL_ADMIN_PASSWORD }}
         run: terraform plan -input=false -no-color
@@ -83,6 +86,7 @@ jobs:
         id: tf_apply
         working-directory: terraform
         env:
+          TF_VAR_arm_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           TF_VAR_sql_admin_username: ${{ secrets.TF_VAR_SQL_ADMIN_USERNAME }}
           TF_VAR_sql_admin_password: ${{ secrets.TF_VAR_SQL_ADMIN_PASSWORD }}
         run: terraform apply -input=false -auto-approve
