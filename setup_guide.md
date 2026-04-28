@@ -131,24 +131,12 @@ Terraform requires the Azure subscription ID to be provided via the `TF_VAR_arm_
 
 Get your subscription ID and set the environment variable:
 
-**PowerShell:**
-```powershell
-$env:TF_VAR_arm_subscription_id = $(az account show --query id -o tsv)
-```
-
-**Bash:**
 ```bash
 export TF_VAR_arm_subscription_id=$(az account show --query id -o tsv)
 ```
 
 Verify it's set:
 
-**PowerShell:**
-```powershell
-$env:TF_VAR_arm_subscription_id
-```
-
-**Bash:**
 ```bash
 echo $TF_VAR_arm_subscription_id
 ```
