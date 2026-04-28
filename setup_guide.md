@@ -125,7 +125,39 @@ See `variables.tf` for all optional overrides and their defaults.
 
 ---
 
-## 6. Initialize
+## 6. Set the Subscription ID Environment Variable
+
+Terraform requires the Azure subscription ID to be provided via the `TF_VAR_arm_subscription_id` environment variable. This is used by the AzureRM provider during `plan` and `apply`.
+
+Get your subscription ID and set the environment variable:
+
+**PowerShell:**
+```powershell
+$env:TF_VAR_arm_subscription_id = $(az account show --query id -o tsv)
+```
+
+**Bash:**
+```bash
+export TF_VAR_arm_subscription_id=$(az account show --query id -o tsv)
+```
+
+Verify it's set:
+
+**PowerShell:**
+```powershell
+$env:TF_VAR_arm_subscription_id
+```
+
+**Bash:**
+```bash
+echo $TF_VAR_arm_subscription_id
+```
+
+> **Note:** In GitHub Actions, this is automatically provided via the `AZURE_SUBSCRIPTION_ID` secret through the workflow environment variable configuration.
+
+---
+
+## 7. Initialize
 
 ```bash
 cd terraform
@@ -136,7 +168,7 @@ This connects to the remote state backend and downloads required providers. Conf
 
 ---
 
-## 7. Plan and Apply
+## 8. Plan and Apply
 
 ```bash
 terraform plan
@@ -157,7 +189,7 @@ On completion, Terraform outputs the following:
 
 ---
 
-## 8. Push Container Images to ACR
+## 9. Push Container Images to ACR
 
 The App Services pull images from the existing ACR. Build and push after `apply`:
 
@@ -177,7 +209,7 @@ Image names must match `site_image_name` and `api_image_name` variable values (d
 
 ---
 
-## 9. Tear Down
+## 10. Tear Down
 
 ```bash
 terraform destroy
