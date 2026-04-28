@@ -418,7 +418,7 @@ resource "azurerm_monitor_autoscale_setting" "plan" {
   enabled             = true
 
   profile {
-    name = "default"
+    name = "business-hours-10-to-20-est"
 
     capacity {
       default = 2
@@ -464,6 +464,46 @@ resource "azurerm_monitor_autoscale_setting" "plan" {
         value     = "1"
         cooldown  = "PT10M"
       }
+    }
+
+    recurrence {
+      timezone = "Eastern Standard Time"
+      days = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ]
+      hours   = [10]
+      minutes = [0]
+    }
+  }
+
+  profile {
+    name = "off-hours"
+
+    capacity {
+      default = 1
+      minimum = 1
+      maximum = 2
+    }
+
+    recurrence {
+      timezone = "Eastern Standard Time"
+      days = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ]
+      hours   = [20]
+      minutes = [0]
     }
   }
 
