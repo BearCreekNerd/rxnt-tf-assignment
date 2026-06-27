@@ -1,0 +1,103 @@
+name: DAST Baseline Scans
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zap-site-baseline:
+    name: ZAP Baseline (Site)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Start stack
+        run: docker compose -f docker-compose.yaml up -d --build
+
+      - name: Wait for site to be ready
+        run: |
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:8881/health >/dev/null; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Site did not become healthy in time."
+          docker compose -f docker-compose.yaml ps
+          exit 1
+
+      - name: Run ZAP baseline scan for site (report-only)
+        run: |
+          docker run --rm \
+            --network host \
+            -v "$PWD:/zap/wrk:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://127.0.0.1:8881 \
+            -r zap-site-report.html \
+            -J zap-site-report.json \
+            -I || true
+
+      - name: Upload ZAP site report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-site-report
+          path: |
+            zap-site-report.html
+            zap-site-report.json
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose -f docker-compose.yaml down -v
+
+  zap-api-baseline:
+    name: ZAP Baseline (API)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Start stack
+        run: docker compose -f docker-compose.yaml up -d --build
+
+      - name: Wait for API to be ready
+        run: |
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:8882/health >/dev/null; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "API did not become healthy in time."
+          docker compose -f docker-compose.yaml ps
+          exit 1
+
+      - name: Run ZAP baseline scan for API (report-only)
+        run: |
+          docker run --rm \
+            --network host \
+            -v "$PWD:/zap/wrk:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://127.0.0.1:8882 \
+            -r zap-api-report.html \
+            -J zap-api-report.json \
+            -I || true
+
+      - name: Upload ZAP API report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-api-report
+          path: |
+            zap-api-report.html
+            zap-api-report.json
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose -f docker-compose.yaml down -v
