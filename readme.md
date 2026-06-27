@@ -193,6 +193,29 @@ az ad app federated-credential create \
 
 After configuration, run the workflow manually with `workflow_dispatch` or push to `main` for automatic execution.
 
+### Security Scanning Workflows (SAST and DAST)
+
+This repository includes dedicated GitHub Actions security workflows:
+
+- `.github/workflows/sast.yml`
+	- Triggers: pull requests to `main`, pushes to `main`, and manual dispatch.
+	- Tools: CodeQL (C#), Semgrep, tfsec (Terraform), and Trivy (container images).
+	- Current policy: report-only. Findings are uploaded as workflow artifacts, and CodeQL findings are published in GitHub Security.
+
+- `.github/workflows/dast.yml`
+	- Triggers: pushes to `main` and manual dispatch.
+	- Tools: OWASP ZAP baseline scans.
+	- Targets: both `marketing-site` (`http://127.0.0.1:8881`) and `marketing-api` (`http://127.0.0.1:8882`) in separate jobs.
+	- Current policy: baseline report-only. Jobs fail on runtime/setup failures, not on scanner findings.
+
+Dependency update automation is configured in `.github/dependabot.yml` for:
+- NuGet dependencies in `/api` and `/site`.
+- GitHub Actions workflow dependencies.
+
+Future hardening path:
+- Move to severity-based fail gates (for example HIGH/CRITICAL) after baseline triage.
+- Add scheduled full/active DAST scans when scan duration and false positives are acceptable.
+
 ### 8. Initialize
 
 ```bash
