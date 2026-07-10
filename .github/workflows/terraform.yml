@@ -84,15 +84,17 @@ jobs:
           # Check whether the container already exists (read-only operation) before
           # attempting to create it. This avoids a failing write on a disabled or
           # read-only subscription when the container was previously provisioned.
+          AZ_EXIT=0
           CONTAINER_EXISTS=$(az storage container exists \
             --name "${{ secrets.TFSTATE_CONTAINER }}" \
             --account-name "${{ secrets.TFSTATE_STORAGE_ACCOUNT }}" \
             --auth-mode login \
             --query exists \
-            --output tsv) || {
-            echo "Warning: could not query container existence (exit code $?); will attempt creation."
+            --output tsv) || AZ_EXIT=$?
+          if [[ $AZ_EXIT -ne 0 ]]; then
+            echo "Warning: could not query container existence (exit code ${AZ_EXIT}); will attempt creation."
             CONTAINER_EXISTS=false
-          }
+          fi
 
           if [[ "${CONTAINER_EXISTS}" != "true" ]]; then
             # az storage container create is idempotent: exits 0 whether the container
