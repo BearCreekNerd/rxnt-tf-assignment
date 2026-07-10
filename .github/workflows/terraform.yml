@@ -90,7 +90,7 @@ jobs:
             --auth-mode login \
             --query exists \
             --output tsv) || {
-            echo "Warning: could not query container existence; will attempt creation."
+            echo "Warning: could not query container existence (exit code $?); will attempt creation."
             CONTAINER_EXISTS=false
           }
 
