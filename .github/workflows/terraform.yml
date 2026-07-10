@@ -37,19 +37,19 @@ jobs:
         if: steps.tf_dir.outputs.exists == 'true'
         uses: hashicorp/setup-terraform@v4
 
+      - name: Terraform fmt
+        if: steps.tf_dir.outputs.exists == 'true'
+        working-directory: terraform
+        run: terraform fmt -check -recursive
+
       - name: Azure login with OIDC
         if: steps.tf_dir.outputs.exists == 'true'
-        uses: azure/login@v3
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           enable-AzPSSession: true
-
-      - name: Terraform fmt
-        if: steps.tf_dir.outputs.exists == 'true'
-        working-directory: terraform
-        run: terraform fmt -check -recursive
 
       - name: Bootstrap Terraform state backend
         if: steps.tf_dir.outputs.exists == 'true'
@@ -81,13 +81,25 @@ jobs:
               --output none
           fi
 
-          # az storage container create is idempotent: exits 0 whether the container
-          # is newly created or already exists, eliminating any check-then-create race.
-          az storage container create \
+          # Check whether the container already exists (read-only operation) before
+          # attempting to create it. This avoids a failing write on a disabled or
+          # read-only subscription when the container was previously provisioned.
+          CONTAINER_EXISTS=$(az storage container exists \
             --name "${{ secrets.TFSTATE_CONTAINER }}" \
             --account-name "${{ secrets.TFSTATE_STORAGE_ACCOUNT }}" \
             --auth-mode login \
-            --output none
+            --query exists \
+            --output tsv 2>/dev/null) || CONTAINER_EXISTS=false
+
+          if [[ "${CONTAINER_EXISTS}" != "true" ]]; then
+            # az storage container create is idempotent: exits 0 whether the container
+            # is newly created or already exists, eliminating any check-then-create race.
+            az storage container create \
+              --name "${{ secrets.TFSTATE_CONTAINER }}" \
+              --account-name "${{ secrets.TFSTATE_STORAGE_ACCOUNT }}" \
+              --auth-mode login \
+              --output none
+          fi
 
       - name: Terraform init
         if: steps.tf_dir.outputs.exists == 'true'
