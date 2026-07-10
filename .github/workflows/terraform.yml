@@ -51,6 +51,44 @@ jobs:
         working-directory: terraform
         run: terraform fmt -check -recursive
 
+      - name: Bootstrap Terraform state backend
+        if: steps.tf_dir.outputs.exists == 'true'
+        run: |
+          # az storage account list returns an empty list when no accounts match the
+          # filter, and exits with a non-zero code on permission or resource-group
+          # errors, giving clear diagnostic output for real failures.
+          ACCOUNT_COUNT=$(az storage account list \
+            --resource-group "${{ secrets.TFSTATE_RESOURCE_GROUP }}" \
+            --query "[?name=='${{ secrets.TFSTATE_STORAGE_ACCOUNT }}'].name | length(@)" \
+            --output tsv)
+
+          if [[ "$ACCOUNT_COUNT" -eq 0 ]]; then
+            LOCATION=$(az group show \
+              --name "${{ secrets.TFSTATE_RESOURCE_GROUP }}" \
+              --query location \
+              --output tsv) || {
+              echo "Terraform state resource group not found. Create the resource group and set the TFSTATE_RESOURCE_GROUP secret before running this workflow."
+              exit 1
+            }
+            az storage account create \
+              --name "${{ secrets.TFSTATE_STORAGE_ACCOUNT }}" \
+              --resource-group "${{ secrets.TFSTATE_RESOURCE_GROUP }}" \
+              --location "$LOCATION" \
+              --sku Standard_LRS \
+              --https-only true \
+              --allow-blob-public-access false \
+              --min-tls-version TLS1_2 \
+              --output none
+          fi
+
+          # az storage container create is idempotent: exits 0 whether the container
+          # is newly created or already exists, eliminating any check-then-create race.
+          az storage container create \
+            --name "${{ secrets.TFSTATE_CONTAINER }}" \
+            --account-name "${{ secrets.TFSTATE_STORAGE_ACCOUNT }}" \
+            --auth-mode login \
+            --output none
+
       - name: Terraform init
         if: steps.tf_dir.outputs.exists == 'true'
         working-directory: terraform
