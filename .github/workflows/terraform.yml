@@ -84,6 +84,9 @@ jobs:
           # Check whether the container already exists (read-only operation) before
           # attempting to create it. This avoids a failing write on a disabled or
           # read-only subscription when the container was previously provisioned.
+          # AZ_EXIT captures the exit code via '|| AZ_EXIT=$?' because the command
+          # substitution $(...) only preserves stdout; without this, the exit code
+          # would be lost after the next command runs.
           AZ_EXIT=0
           CONTAINER_EXISTS=$(az storage container exists \
             --name "${{ secrets.TFSTATE_CONTAINER }}" \
