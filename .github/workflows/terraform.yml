@@ -89,7 +89,10 @@ jobs:
             --account-name "${{ secrets.TFSTATE_STORAGE_ACCOUNT }}" \
             --auth-mode login \
             --query exists \
-            --output tsv 2>/dev/null) || CONTAINER_EXISTS=false
+            --output tsv) || {
+            echo "Warning: could not query container existence; will attempt creation."
+            CONTAINER_EXISTS=false
+          }
 
           if [[ "${CONTAINER_EXISTS}" != "true" ]]; then
             # az storage container create is idempotent: exits 0 whether the container
